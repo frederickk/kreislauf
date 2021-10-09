@@ -1,7 +1,7 @@
 return {
 -- Table: {1}
 {
-   "levee",
+   "hip-hop",
    {2},
 },
 -- Table: {2}
@@ -98,8 +98,8 @@ return {
 },
 -- Table: {8}
 {
-   ["velocity"]=96,
    ["points"]={72},
+   ["velocity"]=96,
 },
 -- Table: {9}
 {
@@ -108,8 +108,8 @@ return {
 },
 -- Table: {10}
 {
-   ["velocity"]=96,
    ["points"]={74},
+   ["velocity"]=96,
 },
 -- Table: {11}
 {
@@ -118,8 +118,8 @@ return {
 },
 -- Table: {12}
 {
-   ["velocity"]=96,
    ["points"]={76},
+   ["velocity"]=96,
 },
 -- Table: {13}
 {
@@ -128,8 +128,8 @@ return {
 },
 -- Table: {14}
 {
-   ["velocity"]=96,
    ["points"]={78},
+   ["velocity"]=96,
 },
 -- Table: {15}
 {
@@ -138,8 +138,8 @@ return {
 },
 -- Table: {16}
 {
-   ["velocity"]=96,
    ["points"]={80},
+   ["velocity"]=96,
 },
 -- Table: {17}
 {
@@ -148,8 +148,8 @@ return {
 },
 -- Table: {18}
 {
-   ["velocity"]=96,
    ["points"]={82},
+   ["velocity"]=96,
 },
 -- Table: {19}
 {
@@ -158,8 +158,8 @@ return {
 },
 -- Table: {20}
 {
-   ["velocity"]=96,
    ["points"]={84},
+   ["velocity"]=96,
 },
 -- Table: {21}
 {
@@ -168,8 +168,8 @@ return {
 },
 -- Table: {22}
 {
-   ["velocity"]=96,
    ["points"]={86},
+   ["velocity"]=96,
 },
 -- Table: {23}
 {
@@ -354,8 +354,9 @@ return {
 },
 -- Table: {57}
 {
-   ["points"]={121},
+   ["beat"]=60,
    ["velocity"]=96,
+   ["points"]={121},
 },
 -- Table: {58}
 {
@@ -364,8 +365,9 @@ return {
 },
 -- Table: {59}
 {
-   ["points"]={123},
+   ["beat"]=60,
    ["velocity"]=96,
+   ["points"]={123},
 },
 -- Table: {60}
 {
@@ -374,9 +376,8 @@ return {
 },
 -- Table: {61}
 {
-   ["beat"]=60,
-   ["velocity"]=96,
    ["points"]={125},
+   ["velocity"]=96,
 },
 -- Table: {62}
 {
@@ -427,9 +428,8 @@ return {
 },
 -- Table: {71}
 {
-   ["beat"]=60,
-   ["velocity"]=96,
    ["points"]={135},
+   ["velocity"]=96,
 },
 -- Table: {72}
 {

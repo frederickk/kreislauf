@@ -1,27 +1,31 @@
--- Kreislauf
+-- kreislauf
 -- Beat sequencing
 -- rund um den Kreis
 --
--- v0.2.0
+-- v0.3.0
 -- 
--- E1 pattern
--- E1+K1 bpm
--- E1+K2 loops
---
--- E2 ring
--- E2+K1 ring chan.
---
--- E3 step
--- E3+K1 beat val
--- E3+K2 beat velocity
---
--- K1 add pattern
+-- E1 change page
 -- K2 play/stop
--- K3 set/del beat
 --
--- Fates only
--- E4 bpm
--- E4+K1 step div.
+-- Page 1
+-- E2 pattern
+-- E3 bpm
+-- E3+K1 step div
+-- E4 step div
+-- K3 add pattern
+--
+-- Page 2
+-- E2 ring
+-- E3 ring chan.
+-- E3+K1 loops
+-- E4 loops
+--
+-- Page 3
+-- E2 step
+-- E3 note val
+-- E3+K1 beat velocity
+-- E4 beat velocity
+-- K3 set/del beat
 --
 -- llllllll.co/t/kreislauf
 --
@@ -35,272 +39,23 @@ local util = require 'util'
 
 local ui = include('lib/core/ui')
 local stueck = include('lib/core/stueck')
+local kreislauf = include('lib/core/kreislauf_app')
 
-local notes_off_metro
 local update_id
 local midi_out_device
 local is_playing = true
+local selecting_file = false
 local use_mod = nil
-
-local kreislauf = {
-  autosave_name = 'kreislauf-state',
-  bpm = 90,
-  defaults = {
-    beat = nil,
-    channel = 5,
-    loop = 0,
-    velocity = 96,
-  },
-  loop_index = 0,
-  num_rings = 4,
-  num_steps = 16,
-  pattern_index = 1,
-  patterns = {},
-  patterns_name = 'untitled',
-  ring_index = 1,
-  steps = {'1.1', '4.4', '4.3', '4.2', '4.1', '3.4', '3.3', '3.2', '3.1', '2.4', '2.3', '2.2', '2.1', '1.4', '1.3', '1.2'},
-  step_index = 1,
-  version = '0.2.0',
-}
-
---- Calculates points for pattern.
--- @param x  center X value
--- @param y  center Y value
-function kreislauf:plot_points(x, y)
-  local r = 6
-  local increment = 360 / #kreislauf.steps
-  local offset = util.degs_to_rads(increment * -2)
-  local angle = {0, 0}
-
-  local pattern = {}
-  pattern['loop'] = kreislauf.defaults.loop
-  for i = 1, kreislauf.num_rings do
-    pattern[i] = {}
-    r = r + (ui.VIEWPORT.height / kreislauf.num_rings) / 2.5
-
-    pattern[i]['channel'] = kreislauf.defaults.channel - i
-
-    for j = 1, #kreislauf.steps do
-      pattern[i][j] = {}
-      angle[1] = util.degs_to_rads(j * increment)
-      angle[2] = (angle[1] + util.degs_to_rads(increment))
-
-      pattern[i][j]['points'] = stueck.plot(x, y, r, r - 6, offset + angle[1], offset + angle[2])
-      pattern[i][j]['beat'] = kreislauf.defaults.beat
-      pattern[i][j]['velocity'] = kreislauf.defaults.velocity
-    end
-  end
-  
-  table.insert(kreislauf.patterns, pattern)
-  kreislauf.pattern_index = #kreislauf.patterns
-end
-
---- Sets active pattern value.
--- @param delta  delta of change
-function kreislauf:set_active_pattern(delta)
-  kreislauf.pattern_index = util.clamp(kreislauf.pattern_index + delta, 1, #kreislauf.patterns)
-end
-
---- Removes active pattern.
-function kreislauf:remove_active_pattern()
-  table.remove(kreislauf.patterns, kreislauf.pattern_index)
-  kreislauf.pattern_index = #kreislauf.patterns
-end
-
---- Returns loop count of given pattern.
--- @param pattern  pattern index
-function kreislauf:get_loop(pattern)
-  return kreislauf.patterns[pattern]['loop']
-end
-
---- Returns loop count of active pattern.
-function kreislauf:get_active_loop()
-  return kreislauf:get_loop(kreislauf.pattern_index)
-end
-
---- Sets loop count of active pattern.
--- @param delta  delta of change
-function kreislauf:set_active_loop_delta(delta)
-  -- admittedly 32 is an arbitrary max ¯\_(ツ)_/¯
-  kreislauf.patterns[kreislauf.pattern_index]['loop'] = util.clamp(kreislauf.patterns[kreislauf.pattern_index]['loop'] + delta, 0, 32)
-end
-
---- Sets active ring value.
--- @param delta  delta of change
-function kreislauf:set_active_ring(delta)
-  kreislauf.ring_index = util.wrap(kreislauf.ring_index + delta, 1, kreislauf.num_rings)
-end
-
---- Returns step value name.
-function kreislauf:get_active_step()
-  return kreislauf.steps[kreislauf.step_index]
-end
-
---- Sets active step value.
--- @param delta  delta of change
-function kreislauf:set_active_step(delta)
-  kreislauf.step_index = util.wrap(kreislauf.step_index + delta, 1, #kreislauf.steps)
-end
-
---- Returns channel of given ring.
--- @param ring  ring index
-function kreislauf:get_channel(ring)
-  return kreislauf.patterns[kreislauf.pattern_index][ring]['channel']
-end
-
---- Returns channel of active ring.
-function kreislauf:get_active_channel()
-  return kreislauf:get_channel(kreislauf.ring_index)
-end
-
---- Sets channel of active ring.
--- @param delta  delta of change
-function kreislauf:set_active_channel_delta(delta)
-  kreislauf.patterns[kreislauf.pattern_index][kreislauf.ring_index]['channel'] = util.clamp(kreislauf.patterns[kreislauf.pattern_index][kreislauf.ring_index]['channel'] + delta, 0, 16)
-end
-
---- Returns param by name of given ring.
--- @param name  string name of param
--- @param ring  ring index
-function kreislauf:get(name, ring)
-  return kreislauf.patterns[kreislauf.pattern_index][ring][kreislauf.step_index][name]
-end
-
---- Returns param by name of current selection.
--- @param name  string name of param
-function kreislauf:get_active(name)
-  return kreislauf:get(name, kreislauf.ring_index)
-end
-
---- Sets param by name e of current selection.
--- @param name  string name of param
--- @param num  midi note
-function kreislauf:set_active(name, num)
-  kreislauf.patterns[kreislauf.pattern_index][kreislauf.ring_index][kreislauf.step_index][name] = num
-end
-
---- Sets active pattern param by name
--- @param name   string name of param
--- @param delta  delta of change
-function kreislauf:set_active_delta(name, delta)
-  kreislauf.patterns[kreislauf.pattern_index][kreislauf.ring_index][kreislauf.step_index][name] = util.clamp(kreislauf.patterns[kreislauf.pattern_index][kreislauf.ring_index][kreislauf.step_index][name] + delta, 0, 127)
-end
-
---- Output beat/note to engine.
---- TODO(frederickk)
--- @param ring  ring index
-function kreislauf:engine_out(ring)
-end
-
---- Output beat/note to crow.
--- @param ring  ring index
-function kreislauf:crow_out(ring)
-  crow.output[1].volts = (kreislauf:get('beat', ring) - 60) / 12
-  crow.output[2].execute()
-end
-
---- Output beat/note to crow jf.
--- @param ring  ring index
-function kreislauf:crow_jf_out(ring)
-  -- TODO(frederickk): Need help debugging from Crow folks.
-  -- crow.ii.jf.play_note((kreislauf:get('beat', ring) - 60) / 12, kreislauf:get('velocity', ring) / 16)
-  crow.ii.jf.play_voice(kreislauf:get_channel(ring), (kreislauf:get('beat', ring) - 60) / 12, kreislauf:get('velocity', ring) / 16)
-end
-
---- Output beat/note to midi.
--- @param ring  ring index
-function kreislauf:midi_out(ring)
-  if kreislauf:get('beat', ring) then
-    midi_out_device:note_on(kreislauf:get('beat', ring), kreislauf:get('velocity', ring), kreislauf:get_channel(ring))
-  end
-
-  if params:get('note_length') < 4 then
-    notes_off_metro:start((60 / params:get('clock_tempo') / params:get('step_div')) * params:get('note_length') * 0.25, 1)
-  end
-end
-
---- Resets loop and step indices to start.
-function kreislauf:start()
-  kreislauf.loop_index = 0
-  kreislauf.step_index = 1
-end
-
---- Stops all Midi notes, on all patterns.
-function kreislauf:stop()
-  kreislauf.loop_index = 0
-  kreislauf.step_index = 1
-
-  for p = 1, #kreislauf.patterns do
-    for i = 1, kreislauf.num_rings do
-      for j = 1, #kreislauf.steps do
-        midi_out_device:note_on(kreislauf.patterns[p][i][j]['beat'], nil, kreislauf:get_channel(i))
-      end
-    end
-  end
-end
-
---- Saves current pattern as file.
-function kreislauf.save_pattern(txt)
-  if txt then
-    local pattern = {txt, kreislauf.patterns}
-    local full_path = norns.state.data .. txt
-
-    tab.save(pattern, full_path .. '.kl')
-    params:write(full_path .. '.pset')
-    print('Saved ' .. full_path)
-  else
-    print('Save canceled')
-  end
-end
-
---- Loads pattern from file.
-function kreislauf.load_pattern(pth)
-  local filename = pth:match('^.+/(.+)$')
-  local ext = pth:match('^.+(%..+)$')
-
-  if ext == '.kl' then
-    local saved = tab.load(pth)
-    print(pth)
-
-    if saved ~= nil then
-      print('pattern found')
-      kreislauf.patterns_name = saved[1]
-      kreislauf.patterns = saved[2]
-      kreislauf.pattern_index = 1
-      params:read(norns.state.data .. saved[1] .. '.pset')
-       
-      print('loaded', pth)
-    else
-      print('not valid pattern data')
-    end
-  else
-    print('Error: no file found at ' .. pth)
-
-    return
-  end
-end
-
---- Copies ./patterns into ~/dust/data/kreislauf/patterns
-function kreislauf.install_patterns()
-  local patterns_dir = norns.state.path .. 'patterns'
-  local data_patterns_dir = norns.state.data .. 'patterns'
-
-  if util.file_exists(data_patterns_dir) == false then
-    util.make_dir(data_patterns_dir)
-
-    if util.file_exists(patterns_dir) and util.file_exists(data_patterns_dir) then
-      for _, dir in ipairs(util.scandir(patterns_dir)) do
-        local from = patterns_dir .. '/' .. dir
-        local to = data_patterns_dir .. '/' .. dir
-        util.os_capture('cp ' .. from .. '* ' .. to)
-      end
-    end
-  end
-end
 
 --- Metro update thread for UI redraw.
 function ui.update()
-  redraw()
+  if (selecting_file == false) then
+    redraw()
+  end
+end
+
+local function init_kreislauf()
+  kreislauf:plot_points(ui.VIEWPORT.center, ui.VIEWPORT.middle, ui.VIEWPORT.width / 2)
 end
 
 --- Clock update thread for playback.
@@ -311,8 +66,12 @@ local function update()
     if is_playing then
       kreislauf:set_active_step(-1)
 
+      if kreislauf.step_index == 1 then
+        kreislauf.loop_index = kreislauf.loop_index + 1
+      end
+
       if kreislauf:get_active_loop() ~= 0 and 
-         kreislauf.loop_index > kreislauf:get_active_loop() then
+         kreislauf.loop_index >= kreislauf:get_active_loop() then
         if #kreislauf.patterns > 1 then
           if kreislauf.pattern_index == #kreislauf.patterns then
             kreislauf.pattern_index = 1
@@ -320,7 +79,7 @@ local function update()
             kreislauf:set_active_pattern(1)
           end
 
-          kreislauf.loop_index = 1
+          kreislauf.loop_index = 0
         else
           clock.transport.stop()
         end
@@ -336,9 +95,6 @@ local function update()
         end
       end
       
-      if kreislauf.step_index == 1 then
-         kreislauf.loop_index = kreislauf.loop_index + 1
-      end
     end
   end
 end
@@ -347,6 +103,7 @@ end
 local function init_midi()
   midi_out_device = midi.connect(1)
   midi_out_device.event = function() end
+  kreislauf.midi_out_device = midi_out_device
 end
 
 --- Event handler for Midi start.
@@ -355,7 +112,6 @@ function clock.transport.start()
     return
   end
 
-  print('Start Clock')
   update_id = clock.run(update)
   is_playing = true
   kreislauf:start()
@@ -363,7 +119,6 @@ end
 
 --- Event handler for Midi stop.
 function clock.transport.stop()
-  print('Stop Clock')
   clock.cancel(update_id)
   is_playing = false
   kreislauf:stop()
@@ -371,7 +126,46 @@ end
 
 -- Create params menu
 local function add_params()
+  params:add_separator('DEFAULTS')
+  params:add {
+    type = 'number',
+    id = 'default_beat',
+    name = 'Note num.',
+    min = 0,
+    max = 127,
+    default = 60
+  }
+
+  params:add {
+    type = 'number',
+    id = 'default_velocity',
+    name = 'Velocity num.',
+    min = 0,
+    max = 127,
+    default = 96
+  }
+
+  params:add {
+    type = 'number',
+    id = 'default_loop',
+    name = 'Loop len.',
+    min = 0,
+    max = 32,
+    default = 0
+  }
+
+  params:add {
+    type = 'number',
+    id = 'default_channel',
+    name = 'Channel range',
+    min = 5,
+    max = 17,
+    default = 5
+  }
+
   params:add_separator('PLAYBACK')
+
+  -- TODO (fredrickk): Should this be assignable per ring?
   params:add {
     type = 'number',
     id = 'step_div',
@@ -396,9 +190,9 @@ local function add_params()
     options = {'midi', 'crow out 1+2', 'crow ii JF'},
     default = 1,
     action = function(value)
-      if value == 4 then 
+      if value == 2 then 
         crow.output[2].action = '{to(5, 0), to(0, 0.25)}'
-      elseif value == 5 then
+      elseif value == 3 then
         crow.ii.pullup(true)
         crow.ii.jf.mode(1)
       end
@@ -414,18 +208,32 @@ local function add_params()
     default = 1,
     action = function(value) 
       midi_out_device = midi.connect(value)
+      kreislauf.midi_out_device = midi_out_device
     end
   }
 
   params:add_separator('LOAD/SAVE')
+
   params:add_trigger('save_pattern', 'Save pattern')
   params:set_action('save_pattern', function(x)
-    textentry.enter(kreislauf.save_pattern, kreislauf.pattern_title)
+    local function save(val) 
+      return kreislauf:save_pattern(val)
+    end
+    textentry.enter(save, kreislauf.pattern_title)
   end)
 
   params:add_trigger('load_pattern', 'Load pattern')
   params:set_action('load_pattern', function(x)
-    fileselect.enter(norns.state.data, kreislauf.load_pattern)
+    local function load(val)
+      return kreislauf:load_pattern(val)
+    end
+    fileselect.enter(norns.state.data, load)
+  end)
+
+  params:add_trigger('clear_all_pattern', 'Clear pattern')
+  params:set_action('clear_all_pattern', function(x)
+    kreislauf:reset()
+    init_kreislauf()
   end)
 
   params:add_number('bpm', 'bpm', 1, 300, kreislauf.bpm)
@@ -435,24 +243,22 @@ local function add_params()
   end)
   params:hide('bpm')
 
-  -- load saved params
   params:read()
 end
 
---- Inits Kreislauf.
+--- Inits kreislauf.
 function init()
   print(norns.state.name .. ' v' .. kreislauf.version)
   screen.ping()
   screen.aa(1)
   init_midi()
-  add_params()
   
-  kreislauf:plot_points(ui.VIEWPORT.center, ui.VIEWPORT.middle)
-  -- kreislauf.install_patterns()
-  -- kreislauf.load_pattern(norns.state.data .. kreislauf.autosave_name .. '.kl')
-
-  notes_off_metro = metro.init()
-  notes_off_metro.event = kreislauf:stop()
+  add_params()
+  ui.LAST_PAGE = 3
+  
+  init_kreislauf()
+  kreislauf:install_patterns()
+  kreislauf:load_pattern(norns.state.data .. kreislauf.autosave_name .. '.kl')
 
   update_id = clock.run(update)
   norns.enc.sens(1, 8)
@@ -460,45 +266,67 @@ end
 
 --- Encoder input.
 function enc(index, delta)
+  local page = ui.page_get()
+  
   if index == 1 then
-    if use_mod == 1 then
-      params:delta('bpm', delta)
-    elseif use_mod == 2 then
-      kreislauf:set_active_loop_delta(delta)
-    else 
-      kreislauf:set_active_pattern(delta)
-    end
-  
-  elseif index == 2 then
-    if use_mod == 1 then
-      kreislauf:set_active_channel_delta(delta)
-    else
-      kreislauf:set_active_ring(-delta)
-    end
-  
-  elseif index == 3 then
-    if use_mod == 1 then
-      kreislauf:set_active_delta('beat', delta)
-    elseif use_mod == 2 then
-      kreislauf:set_active_delta('velocity', delta)
-    else 
-      kreislauf:set_active_step(-delta)
-    end
+    ui:page_delta(delta)
   end
 
-  if (#norns.encoders.accel == 4) then
-    if index == 4 then
+  if page == 1 then
+    if index == 2 then
+      kreislauf:set_active_pattern(delta)
+    elseif index == 3 then
       if use_mod == 1 then
         params:delta('step_div', delta)
       else
         params:delta('bpm', delta)
       end
     end
+    if (#norns.encoders.accel == 4) then
+      if index == 4 then
+        params:delta('step_div', delta)
+      end
+    end
+  
+  elseif page == 2 then
+    if index == 2 then
+      kreislauf:set_active_ring(-delta)
+    elseif index == 3 then
+      if use_mod == 1 then
+        kreislauf:set_active_loop_delta(delta)
+      else
+        kreislauf:set_active_channel_delta(delta)
+      end
+    end
+    if (#norns.encoders.accel == 4) then
+      if index == 4 then
+        kreislauf:set_active_loop_delta(delta)
+      end
+    end
+
+  elseif page == 3 then
+    if index == 2 then
+      kreislauf:set_active_step(-delta)
+    elseif index == 3 then
+      if use_mod == 1 then
+        kreislauf:set_active_delta('velocity', delta)
+      else
+        kreislauf:set_active_delta('beat', delta)
+      end
+    end
+    if (#norns.encoders.accel == 4) then
+      if index == 4 then
+        kreislauf:set_active_delta('velocity', delta)
+      end
+    end
   end
+
 end
 
 --- Button input.
 function key(index, state)
+  local page = ui.page_get()
+  
   if state == 1 then
     if use_mod == nil then
       use_mod = index
@@ -507,10 +335,7 @@ function key(index, state)
     use_mod = nil
   end
 
-  if index == 1 and state == 1 then
-    kreislauf:plot_points(ui.VIEWPORT.center, ui.VIEWPORT.middle)
-
-  elseif index == 2 and state == 1 then
+  if index == 2 and state == 1 then
     if is_playing then
       clock.transport.stop()
     else
@@ -518,62 +343,97 @@ function key(index, state)
     end
 
   elseif index == 3 and state == 1 then
-    if kreislauf:get_active('beat') then
-      kreislauf:set_active('beat', nil)
-    else
-      kreislauf:set_active('beat', 60)
+    if page == 1 then
+      init_kreislauf()
+    elseif page == 2 then
+      selecting_file = true
+      -- TODO(frederickk): Is there a way to trigger a params: action?
+      fileselect.enter(norns.state.data, function(pth)
+        print('LOAD', pth)
+        selecting_file = false
+        if pth ~= "cancel" then
+          kreislauf:load_pattern(pth)
+        end
+      end)
+    elseif page == 3 then
+      if kreislauf:get_active('beat') then
+        kreislauf:set_active('beat', nil)
+      else
+        kreislauf:set_active('beat', 60)
+      end
     end
   end
+
 end
 
 --- Draws label group.
-local function label(x, y, name, val)
+local function label(x, y, page, name, val)
   screen.move(x, y)
-  screen.level(ui.OFF)
+  ui:highlight({page}, ui.OFF, 0)
   screen.text(name)
 
   if val then
     screen.move(x, y + 8)
-    screen.level(ui.ON)
+    ui:highlight({page}, ui.ON, 0)
     screen.text(val)
   end
 end
 
---- Draws labels.
-local function draw_labels()
-  label(2, 8, 'PATTERN', kreislauf.pattern_index .. ' OF ' .. #kreislauf.patterns)
+--- Draw UI globals
+local function draw_ui_global()
+  ui:page_marker(9.5, 9.5)
 
-  label(2, ui.VIEWPORT.middle, 'RING', 'CH. ' .. kreislauf:get_active_channel())
-
-  label(2, ui.VIEWPORT.height - 8, 'STEP', kreislauf:get_active_step())
-
-  label(ui.VIEWPORT.width - 30, 8, 'BPM', params:get('clock_tempo'))
   if is_playing then
-    screen.move(ui.VIEWPORT.width - 12, 4)
-    screen.line_rel(0, 4)
-    screen.line_rel(4, -2)
+    screen.move(24, 5)
+    screen.line_rel(0, 5)
+    screen.line_rel(5, -2.5)
     screen.close()
     screen.fill()
   else
-    screen.rect(ui.VIEWPORT.width - 12, 4, 4, 4)
+    screen.rect(24, 5, 5, 5)
   end
+end
 
-  label(ui.VIEWPORT.width - 30, ui.VIEWPORT.middle, 'LOOP')
-  screen.move(ui.VIEWPORT.width - 30, ui.VIEWPORT.middle + 8)
-  screen.level(ui.ON)
-  if kreislauf:get_active_loop() <= 0 then
-    screen.text('Inf.' .. '/' .. kreislauf.loop_index)
-  else
-    screen.text(kreislauf:get_active_loop() .. '/' .. kreislauf.loop_index)
-  end
+--- Draws page labels.
+local function draw_ui_pages()
+  local page = ui.page_get()
+  
+  if page == 1 then
+    label(2, 48, 1, 'PATTERN', kreislauf.pattern_index .. '/' .. #kreislauf.patterns)
+    label(ui.VIEWPORT.width - 30, 48, 1, 'BPM', params:get('clock_tempo'))
+    label(ui.VIEWPORT.width - 30, 28, 1, 'DIV', params:get('step_div'))
 
-  label(ui.VIEWPORT.width - 30, ui.VIEWPORT.height - 8, 'NO./VEL')
-  screen.move(ui.VIEWPORT.width - 30, ui.VIEWPORT.height - 0)
-  if kreislauf:get_active('beat') then
-    screen.level(ui.ON)
-    screen.text(musicutil.note_num_to_name(kreislauf:get_active('beat'), true) .. '/' .. kreislauf:get_active('velocity'))
-  else
-    screen.text('--/--')
+  elseif page == 2 then
+    label(2, 48, 2, 'RING', kreislauf.ring_index)
+    label(ui.VIEWPORT.width - 30, 48, 2, 'CHAN.', kreislauf:get_active_channel())
+    label(ui.VIEWPORT.width - 30, 28, 2, 'LOOP')
+    screen.move(ui.VIEWPORT.width - 30, 36)
+    ui:highlight({2}, ui.ON, 0)
+    if kreislauf:get_active_loop() <= 0 then
+      screen.text(kreislauf.loop_index .. '/' .. 'Inf.')
+    else
+      screen.text(kreislauf.loop_index .. '/' .. kreislauf:get_active_loop())
+    end
+
+  elseif page == 3 then
+    label(2, 48, 3, 'STEP', kreislauf:get_active_step())
+    label(ui.VIEWPORT.width - 30, 48, 3, 'NOTE')
+    screen.move(ui.VIEWPORT.width - 30, 56)
+    if kreislauf:get_active('beat') then
+      ui:highlight({3})
+      screen.text(musicutil.note_num_to_name(kreislauf:get_active('beat'), true))
+    else
+      screen.text('--')
+    end
+
+    label(ui.VIEWPORT.width - 30, 28, 3, 'VEL.')
+    screen.move(ui.VIEWPORT.width - 30, 36)
+    if kreislauf:get_active('beat') then
+      ui:highlight({3})
+      screen.text(kreislauf:get_active('velocity'))
+    else
+      screen.text('--')
+    end
   end
 end
 
@@ -581,7 +441,8 @@ end
 function redraw()
   screen.clear()
 
-  draw_labels()
+  draw_ui_pages()
+  draw_ui_global()
 
   local pattern = kreislauf.patterns[kreislauf.pattern_index]
   for i = 1, #pattern do
@@ -608,5 +469,5 @@ end
 --- Writes params on script end.
 function cleanup()
   params:write()
-  kreislauf.save_pattern(kreislauf.autosave_name)
+  kreislauf:save_pattern(kreislauf.autosave_name)
 end

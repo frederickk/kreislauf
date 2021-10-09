@@ -19,6 +19,10 @@
 "cut_input_eng": -9.6432746655329e-16
 "cut_input_tape": -inf
 "page": 1
+"default_beat": 60
+"default_velocity": 96
+"default_loop": 0
+"default_channel": 5
 "step_div": 4
 "note_length": 2
 "output": 1

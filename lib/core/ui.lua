@@ -24,11 +24,11 @@ local function update(count)
 end
 
 --- Init
-function init()
+local function init()
   screen.aa(0)
   screen.ping()
 
-  UI.add_page_params() 
+  UI:add_page_params() 
   
   --- Init Metro to handle screen redraw
   counter = metro.init()
@@ -43,21 +43,21 @@ function UI.update() end
 
 --- Add params for Page
 -- @param default_val number:
-function UI.add_page_params(default_val) 
-  params:add_number("page", "Page", UI.FIRST_PAGE - 1, UI.LAST_PAGE + 1, (default_val or 1))
+function UI:add_page_params(default_val) 
+  params:add_number("page", "Page", self.FIRST_PAGE - 1, self.LAST_PAGE + 1, (default_val or 1))
   params:hide("page")
   params:add_separator()
 end
 
 --- Sets Page parameter value as delta
 -- @param val number:
-function UI.page_delta(val)
+function UI:page_delta(val)
   params:delta("page", val)
 
-  if (params:get("page") > UI.LAST_PAGE) then
-    params:set("page", UI.FIRST_PAGE)
-  elseif (params:get("page") < UI.FIRST_PAGE) then
-    params:set("page", UI.LAST_PAGE)
+  if (params:get("page") > self.LAST_PAGE) then
+    params:set("page", self.FIRST_PAGE)
+  elseif (params:get("page") < self.FIRST_PAGE) then
+    params:set("page", self.LAST_PAGE)
   end
 end
 
@@ -70,13 +70,13 @@ end
 -- @param page_nums table:  page numbers to toggle "on" state
 -- @param on  number:  brightnless level for "on" state
 -- @param off number:  brightnless level for "off" state
-function UI.highlight(page_nums, on, off)
+function UI:highlight(page_nums, on, off)
   for i = 1, #page_nums do
     if params:get("page") == page_nums[i] then
-      screen.level((on or UI.ON))
+      screen.level((on or self.ON))
       break
     else
-      screen.level((off or UI.OFF))
+      screen.level((off or self.OFF))
     end
   end
 end
@@ -86,15 +86,15 @@ end
 -- @param y number:  Y-coordinate of element
 -- @param page_num {number|string}  Page number to display
 -- @param args table:
-function UI.page_marker(x, y, param_str, args)
+function UI:page_marker(x, y, param_str, args)
   screen.level(0)
   screen.rect(x - 9, y - 8, 18, 11)
   screen.fill()
 
-  screen.level((on or UI.ON))
-  screen.move(x, y)
-  screen.text_center("P" .. (param_str or UI.page_get()))
   screen.line_width(1)
+  screen.level((on or self.ON))
+  screen.move(x, y)
+  screen.text_center("P" .. (param_str or self.page_get()))
   screen.rect(x - 8, y - 6, 15, 8)
   screen.stroke()
 end
@@ -120,17 +120,17 @@ end
 -- @param args table:
 -- @tparam suffix string:  Optional suffix for display value
 -- @tparam bool boolean:  Optional Boolean to trigger signal
-function UI.draw_param(name, page, x, y, args)
+function UI:draw_param(name, page, x, y, args)
   if args.label ~= false then
-    UI.highlight({page}, UI.ON, 0)
+    self.highlight({page}, self.ON, 0)
     screen.move(x, y + 10)
     screen.text(string.sub(name, 1, 6))
   end
 
-  UI.highlight({page})
+  self.highlight({page})
 
   if (args.bool ~= nil) then
-    UI.signal(x + 3, y, args.bool)
+    self.signal(x + 3, y, args.bool)
     screen.move(x + 8, y + 2)
   else
     screen.move(x, y + 2)
