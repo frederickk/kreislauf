@@ -1,7 +1,7 @@
 [Kreislauf](https://norns.community/en/authors/frederickk/kreislauf)
 ---
 
-v0.3.0
+v0.3.1
 
 ## Beat sequencing rund um den Kreis inspired very heavily by Pocket Operators and the work of [Ethan Hein](http://www.ethanhein.com/). 
 
@@ -45,12 +45,13 @@ I also like the way Pocket Operators accommodate for chaining of beats so I inco
 Patterns can be saved and later recalled (along with accompanying `PSET`). A number of demo patterns of some staple beats is installed within `~/dust/data/kreislauf/patterns`. `LOAD` and `SAVE` patterns from the params menu.
 
 
+<!-- WIP
 ## Demo
 
 Here's a brief video showing a workflow with the OP-Z.
 
 [ video ]
-
+-->
 
 ## Controls and Params
 
@@ -70,6 +71,7 @@ Here's a brief video showing a workflow with the OP-Z.
 | **E3**              | P1     | 20 – 300    | Set BPM                            |
 | **E3+K1** or **E4** | P1     | 1 – 16      | Step divider                       |
 | **K3**              | P1     |             | Add pattern                        |
+| **K3+K1**           | P1     |             | Remove pattern                     |
 
 #### Page 2
 

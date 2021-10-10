@@ -19,7 +19,7 @@ local Kreislauf = {
   ring_index = 1,
   steps = {'1.1', '4.4', '4.3', '4.2', '4.1', '3.4', '3.3', '3.2', '3.1', '2.4', '2.3', '2.2', '2.1', '1.4', '1.3', '1.2'},
   step_index = 1,
-  version = '0.3.0',
+  version = '0.3.1',
 }
 
 local notes_off_metro
@@ -236,7 +236,6 @@ function Kreislauf:load_pattern(pth)
 
   if ext == '.kl' then
     local saved = tab.load(pth)
-    print(pth)
 
     if saved ~= nil then
       self:log('Pattern found')

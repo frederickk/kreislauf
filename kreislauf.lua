@@ -2,7 +2,7 @@
 -- Beat sequencing
 -- rund um den Kreis
 --
--- v0.3.0
+-- v0.3.1
 -- 
 -- E1 change page
 -- K2 play/stop
@@ -344,12 +344,17 @@ function key(index, state)
 
   elseif index == 3 and state == 1 then
     if page == 1 then
-      init_kreislauf()
+      if use_mod == 1 then
+        if #kreislauf.patterns > 1 then
+          kreislauf:remove_active_pattern()
+        end
+      else
+        init_kreislauf()
+      end
     elseif page == 2 then
       selecting_file = true
       -- TODO(frederickk): Is there a way to trigger a params: action?
       fileselect.enter(norns.state.data, function(pth)
-        print('LOAD', pth)
         selecting_file = false
         if pth ~= "cancel" then
           kreislauf:load_pattern(pth)
