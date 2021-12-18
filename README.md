@@ -1,9 +1,9 @@
 [Kreislauf](https://norns.community/en/authors/frederickk/kreislauf)
 ---
 
-v0.3.1
+v0.3.2
 
-## Beat sequencing rund um den Kreis inspired very heavily by Pocket Operators and the work of [Ethan Hein](http://www.ethanhein.com/). 
+## Beat sequencing rund um den Kreis inspired very heavily by Pocket Operators and the work of [Ethan Hein](http://www.ethanhein.com/).
 
 ![Kreislauf UI](./.assets/kreislauf.gif)
 
@@ -17,13 +17,13 @@ v0.3.1
 Kreislauf can be installed via [Maiden's](https://norns.local/maiden) project manager.
 
 
-## Overview 
+## Overview
 
 #### Patterns
 
 Each pattern consists of 4 concentric sequencer rings:
 
-- channel 1 - kick (outermost), 
+- channel 1 - kick (outermost),
 - channel 2 - snare
 - channel 3 - closed hi-hat
 - channel 4 - open hi-hat (innermost).
@@ -110,6 +110,7 @@ $ git clone https://github.com/frederickk/kreislauf.git
 ## Changelog
 - v0.3.x
     - Fixed/tidied UI
+    - Fixed Midi note off
 - v0.2.x
     - Added sequencing of multiple patterns
 - v0.1.x Initial release

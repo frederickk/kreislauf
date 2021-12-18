@@ -2,8 +2,8 @@
 -- Beat sequencing
 -- rund um den Kreis
 --
--- v0.3.1
--- 
+-- v0.3.2
+--
 -- E1 change page
 -- K2 play/stop
 --
@@ -56,13 +56,14 @@ end
 
 local function init_kreislauf()
   kreislauf:plot_points(ui.VIEWPORT.center, ui.VIEWPORT.middle, ui.VIEWPORT.width / 2)
+  kreislauf:init()
 end
 
 --- Clock update thread for playback.
 local function update()
   while true do
     clock.sync(1 / params:get('step_div'))
-      
+
     if is_playing then
       kreislauf:set_active_step(-1)
 
@@ -70,7 +71,7 @@ local function update()
         kreislauf.loop_index = kreislauf.loop_index + 1
       end
 
-      if kreislauf:get_active_loop() ~= 0 and 
+      if kreislauf:get_active_loop() ~= 0 and
          kreislauf.loop_index >= kreislauf:get_active_loop() then
         if #kreislauf.patterns > 1 then
           if kreislauf.pattern_index == #kreislauf.patterns then
@@ -94,7 +95,7 @@ local function update()
           kreislauf:midi_out(i)
         end
       end
-      
+
     end
   end
 end
@@ -176,8 +177,8 @@ local function add_params()
   }
 
   params:add {
-    type = 'option', 
-    id = 'note_length', 
+    type = 'option',
+    id = 'note_length',
     name = 'Note length',
     options = {'25%', '50%', '75%', '100%'},
     default = 2
@@ -190,7 +191,7 @@ local function add_params()
     options = {'midi', 'crow out 1+2', 'crow ii JF'},
     default = 1,
     action = function(value)
-      if value == 2 then 
+      if value == 2 then
         crow.output[2].action = '{to(5, 0), to(0, 0.25)}'
       elseif value == 3 then
         crow.ii.pullup(true)
@@ -206,7 +207,7 @@ local function add_params()
     min = 1,
     max = 4,
     default = 1,
-    action = function(value) 
+    action = function(value)
       midi_out_device = midi.connect(value)
       kreislauf.midi_out_device = midi_out_device
     end
@@ -216,7 +217,7 @@ local function add_params()
 
   params:add_trigger('save_pattern', 'Save pattern')
   params:set_action('save_pattern', function(x)
-    local function save(val) 
+    local function save(val)
       return kreislauf:save_pattern(val)
     end
     textentry.enter(save, kreislauf.pattern_title)
@@ -252,10 +253,10 @@ function init()
   screen.ping()
   screen.aa(1)
   init_midi()
-  
+
   add_params()
   ui.LAST_PAGE = 3
-  
+
   init_kreislauf()
   kreislauf:install_patterns()
   kreislauf:load_pattern(norns.state.data .. kreislauf.autosave_name .. '.kl')
@@ -267,7 +268,7 @@ end
 --- Encoder input.
 function enc(index, delta)
   local page = ui.page_get()
-  
+
   if index == 1 then
     ui:page_delta(delta)
   end
@@ -287,7 +288,7 @@ function enc(index, delta)
         params:delta('step_div', delta)
       end
     end
-  
+
   elseif page == 2 then
     if index == 2 then
       kreislauf:set_active_ring(-delta)
@@ -326,7 +327,7 @@ end
 --- Button input.
 function key(index, state)
   local page = ui.page_get()
-  
+
   if state == 1 then
     if use_mod == nil then
       use_mod = index
@@ -402,7 +403,7 @@ end
 --- Draws page labels.
 local function draw_ui_pages()
   local page = ui.page_get()
-  
+
   if page == 1 then
     label(2, 48, 1, 'PATTERN', kreislauf.pattern_index .. '/' .. #kreislauf.patterns)
     label(ui.VIEWPORT.width - 30, 48, 1, 'BPM', params:get('clock_tempo'))

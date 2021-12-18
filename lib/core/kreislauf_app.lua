@@ -19,22 +19,24 @@ local Kreislauf = {
   ring_index = 1,
   steps = {'1.1', '4.4', '4.3', '4.2', '4.1', '3.4', '3.3', '3.2', '3.1', '2.4', '2.3', '2.2', '2.1', '1.4', '1.3', '1.2'},
   step_index = 1,
-  version = '0.3.1',
+  version = '0.3.2',
 }
 
 local notes_off_metro
 
 --- Initialize metro to stop all notes.
-local function init()
+function Kreislauf:init()
   notes_off_metro = metro.init()
-  notes_off_metro.event = Kreislauf:stop()
+  notes_off_metro.time = (1 / 128) * 4
+  notes_off_metro.count = -1
+  notes_off_metro.event = function() self:midi_note_off() end
 end
 
 --- Calculates points for pattern.
 -- @param x       center X value
 -- @param y       center Y value
--- @param width   
--- @param height  
+-- @param width
+-- @param height
 function Kreislauf:plot_points(x, y, width, height)
   local r = 6
   local increment = 360 / #self.steps
@@ -59,7 +61,7 @@ function Kreislauf:plot_points(x, y, width, height)
       pattern[i][j]['velocity'] = self.defaults.velocity
     end
   end
-  
+
   table.insert(self.patterns, pattern)
   self.pattern_index = #self.patterns
 end
@@ -188,6 +190,17 @@ function Kreislauf:midi_out(ring)
   end
 end
 
+--- Triggers midi note_off on all rings and channels.
+function Kreislauf:midi_note_off()
+  for p = 1, #self.patterns do
+    for i = 1, self.num_rings do
+      for j = 1, #self.steps do
+        self.midi_out_device:note_off(self.patterns[p][i][j]['beat'], nil, self:get_channel(i))
+      end
+    end
+  end
+end
+
 function Kreislauf:reset()
   self:stop()
   self.patterns = {}
@@ -203,18 +216,11 @@ end
 function Kreislauf:stop()
   self.loop_index = 0
   self.step_index = 1
-
-  for p = 1, #self.patterns do
-    for i = 1, self.num_rings do
-      for j = 1, #self.steps do
-        self.midi_out_device:note_on(self.patterns[p][i][j]['beat'], nil, self:get_channel(i))
-      end
-    end
-  end
+  self:midi_note_off()
 end
 
 --- Saves current pattern as file.
--- @param txt  file name for pattern (.kl) file 
+-- @param txt  file name for pattern (.kl) file
 function Kreislauf:save_pattern(txt)
   if txt then
     local pattern = {txt, self.patterns}
@@ -222,14 +228,14 @@ function Kreislauf:save_pattern(txt)
 
     tab.save(pattern, full_path .. '.kl')
     params:write(full_path .. '.pset')
-    self:log('Saved ' .. full_path)
+    self.log('Saved ' .. full_path)
   else
-    self:log('Save canceled')
+    self.log('Save canceled')
   end
 end
 
 --- Loads pattern from file.
--- @param pth  file path of pattern (.kl) file 
+-- @param pth  file path of pattern (.kl) file
 function Kreislauf:load_pattern(pth)
   local filename = pth:match('^.+/(.+)$')
   local ext = pth:match('^.+(%..+)$')
@@ -238,19 +244,19 @@ function Kreislauf:load_pattern(pth)
     local saved = tab.load(pth)
 
     if saved ~= nil then
-      self:log('Pattern found')
+      self.log('Pattern found')
       self.patterns_name = saved[1]
       self.patterns = saved[2]
       self.pattern_index = 1
       params:read(pth:gsub('.kl', '.pset'))
       params:bang()
-       
-      self:log('Loaded', pth)
+
+      self.log('Loaded', pth)
     else
-      self:log('Not valid pattern data')
+      self.log('Not valid pattern data')
     end
   else
-    self:log('Error: no file found at ' .. pth)
+    self.log('Error: no file found at ' .. pth)
 
     return
   end
@@ -271,8 +277,8 @@ function Kreislauf:install_patterns()
         util.os_capture('cp ' .. from .. '* ' .. to)
       end
     end
-    
-    self:log('Demo patterns installed \'' .. data_patterns_dir .. '\'')
+
+    self.log('Demo patterns installed \'' .. data_patterns_dir .. '\'')
   end
 end
 
@@ -280,14 +286,14 @@ end
 -- @param ...   args to output
 function Kreislauf.log(...)
   local arg = {...}
+  -- table.remove(arg, 1)
+
   local out = ''
   for i,v in ipairs(arg) do
     out = out .. tostring(v) .. '\t'
   end
-  
+
   print('[' .. norns.state.name .. ']', out)
 end
-
-init()
 
 return Kreislauf
