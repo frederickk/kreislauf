@@ -28,3 +28,5 @@
 "output": 1
 "midi_out_device": 1
 "bpm": 90
+"quant_scale": 1
+"quant_tonic": 1

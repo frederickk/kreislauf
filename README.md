@@ -1,9 +1,9 @@
 [Kreislauf](https://norns.community/en/authors/frederickk/kreislauf)
 ---
 
-v0.3.1
+v0.4.1
 
-## Beat sequencing rund um den Kreis inspired very heavily by Pocket Operators and the work of [Ethan Hein](http://www.ethanhein.com/). 
+## Beat sequencing rund um den Kreis inspired very heavily by Pocket Operators and the work of [Ethan Hein](http://www.ethanhein.com/).
 
 ![Kreislauf UI](./.assets/kreislauf.gif)
 
@@ -17,13 +17,13 @@ v0.3.1
 Kreislauf can be installed via [Maiden's](https://norns.local/maiden) project manager.
 
 
-## Overview 
+## Overview
 
 #### Patterns
 
 Each pattern consists of 4 concentric sequencer rings:
 
-- channel 1 - kick (outermost), 
+- channel 1 - kick (outermost),
 - channel 2 - snare
 - channel 3 - closed hi-hat
 - channel 4 - open hi-hat (innermost).
@@ -32,7 +32,9 @@ Each pattern consists of 4 concentric sequencer rings:
 
 #### Beat/Notes
 
-When a beat is added to a ring, it fires off a Midi* note when active (`60` by default) to the corresponding channel. While, this script is design with intent to create drum patterns; each beat can have its note value adjusted allowing for melody/harmony constructs as well. Go wild...
+When a beat is added to a ring, it fires off a Midi* note when active (`60` by default) to the corresponding channel. While, this script is designed with intent to create drum patterns; each beat can have its note value adjusted allowing for melody/harmony constructs as well. Go wild...
+
+Notes can be quantized to a desired scale and tonic. Within the `PARAMS > EDIT` menu set `Quantize scale` to a value other than `NONE`. To change the scale tonic change `Scale tonic` to the desired note.
 
 *I've blindly implemented crow, but I have no idea if it works. Any crow users please let me know what bugs you find and I'll adjust.
 
@@ -93,7 +95,8 @@ Here's a brief video showing a workflow with the OP-Z.
 | **E2**              | P3     | 1 – 16      | Cycle through steps                |
 | **E3**              | P3     | 0 – 127     | Set note value for active step     |
 | **E3+K1** or **E4** | P3     | 0 – 127     | Set velocity value for active step |
-| **K3**              | P3     |             | Add beat/note to active step       |
+| **K3**              | P3     |             | Toggle beat/note to active step    |
+| **K3+K1**           | P3     |             | Toggle triplet grid (1/16T)        |
 
 
 
@@ -108,8 +111,12 @@ $ git clone https://github.com/frederickk/kreislauf.git
 
 
 ## Changelog
+- v0.4.x
+    - Added triplet grid
 - v0.3.x
     - Fixed/tidied UI
+    - Fixed Midi note off
+    - Added note quantization
 - v0.2.x
     - Added sequencing of multiple patterns
 - v0.1.x Initial release

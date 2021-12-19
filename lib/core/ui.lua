@@ -1,3 +1,4 @@
+--- @fileoverview Object collection of UI paging methods and visuals
 local UI = {
   --- Viewport size and position constants.
   VIEWPORT = {
@@ -19,37 +20,39 @@ local UI = {
 }
 
 --- Handler for metro thread, e.g. screen redrawing.
-local function update(count)
+-- @private
+local function update_(count)
   UI.update()
 end
 
 --- Init
-local function init()
+-- @private
+local function init_()
   screen.aa(0)
   screen.ping()
 
-  UI:add_page_params() 
-  
-  --- Init Metro to handle screen redraw
+  UI:add_page_params()
+
+  --- Inits Metro to handle screen redraw.
   counter = metro.init()
   counter.time = (1 / 128) * 4
   counter.count = -1
-  counter.event = update
+  counter.event = update_
   counter:start()
 end
 
---- Exposed update callback for metro
+--- Exposes update callback for metro.
 function UI.update() end
 
 --- Add params for Page
 -- @param default_val number:
-function UI:add_page_params(default_val) 
+function UI:add_page_params(default_val)
   params:add_number("page", "Page", self.FIRST_PAGE - 1, self.LAST_PAGE + 1, (default_val or 1))
   params:hide("page")
   params:add_separator()
 end
 
---- Sets Page parameter value as delta
+--- Sets Page parameter value as delta.
 -- @param val number:
 function UI:page_delta(val)
   params:delta("page", val)
@@ -187,7 +190,7 @@ function UI.tape_icon(x, y)
   screen.stroke()
 end
 
---- Creates speaker icon
+--- Creates speaker icon.
 -- @param x number:  X-coordinate of icon
 -- @param y number:  Y-coordinate of icon
 function UI.speaker_icon(x, y)
@@ -207,6 +210,6 @@ if (#norns.encoders.accel == 4) then
   UI.FIRST_PAGE = 1
 end
 
-init()
+init_()
 
 return UI
