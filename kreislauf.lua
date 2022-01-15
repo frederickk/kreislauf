@@ -2,7 +2,7 @@
 -- Beat sequencing
 -- rund um den Kreis
 --
--- v0.3.2
+-- v0.3.3
 --
 -- E1 change page
 -- K2 play/stop

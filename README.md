@@ -1,7 +1,7 @@
 [Kreislauf](https://norns.community/en/authors/frederickk/kreislauf)
 ---
 
-v0.3.2
+v0.3.3
 
 ## Beat sequencing rund um den Kreis inspired very heavily by Pocket Operators and the work of [Ethan Hein](http://www.ethanhein.com/).
 

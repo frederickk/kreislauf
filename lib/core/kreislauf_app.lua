@@ -19,7 +19,7 @@ local Kreislauf = {
   ring_index = 1,
   steps = {'1.1', '4.4', '4.3', '4.2', '4.1', '3.4', '3.3', '3.2', '3.1', '2.4', '2.3', '2.2', '2.1', '1.4', '1.3', '1.2'},
   step_index = 1,
-  version = '0.3.2',
+  version = '0.3.3',
 }
 
 local notes_off_metro
@@ -183,10 +183,11 @@ end
 function Kreislauf:midi_out(ring)
   if self:get('beat', ring) then
     self.midi_out_device:note_on(self:get('beat', ring), self:get('velocity', ring), self:get_channel(ring))
-  end
 
-  if params:get('note_length') < 4 then
-    notes_off_metro:start((60 / params:get('clock_tempo') / params:get('step_div')) * params:get('note_length') * 0.25, 1)
+    if params:get('note_length') < 4 then
+      local t = (60 / params:get('clock_tempo') / params:get('step_div')) * params:get('note_length') * 0.25
+      notes_off_metro:start(t, 1)
+    end
   end
 end
 
@@ -195,7 +196,10 @@ function Kreislauf:midi_note_off()
   for p = 1, #self.patterns do
     for i = 1, self.num_rings do
       for j = 1, #self.steps do
-        self.midi_out_device:note_off(self.patterns[p][i][j]['beat'], nil, self:get_channel(i))
+        if self.patterns[p][i][j]['beat'] then
+          self.midi_out_device:note_off(self.patterns[p][i][j]['beat'], nil, self:get_channel(i))
+          self.log(self.patterns[p][i][j]['beat'], self:get_channel(i))
+        end
       end
     end
   end

@@ -24,12 +24,12 @@ local function update(count)
 end
 
 --- Init
-local function init()
+local function init_()
   screen.aa(0)
   screen.ping()
 
-  UI:add_page_params() 
-  
+  UI:add_page_params()
+
   --- Init Metro to handle screen redraw
   counter = metro.init()
   counter.time = (1 / 128) * 4
@@ -43,7 +43,7 @@ function UI.update() end
 
 --- Add params for Page
 -- @param default_val number:
-function UI:add_page_params(default_val) 
+function UI:add_page_params(default_val)
   params:add_number("page", "Page", self.FIRST_PAGE - 1, self.LAST_PAGE + 1, (default_val or 1))
   params:hide("page")
   params:add_separator()
@@ -207,6 +207,6 @@ if (#norns.encoders.accel == 4) then
   UI.FIRST_PAGE = 1
 end
 
-init()
+init_()
 
 return UI
